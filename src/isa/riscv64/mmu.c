@@ -26,11 +26,11 @@ typedef union PageTableEntry {
 #define PGBASE(pn) (pn << PGSHFT)
 
 // Sv39 page walk
-int PTW_LEVEL = 3;
+#define PTW_LEVEL 5
 #define PTE_SIZE 8
 #define VPNMASK 0x1ff
 static inline uintptr_t VPNiSHFT(int i) {
-  return (PGSHFT) + 9 * i;
+  return i < 4 ? (PGSHFT) + 9 * i : (PGSHFT) + 44;
 }
 static inline uintptr_t VPNi(vaddr_t va, int i) {
   return (va >> VPNiSHFT(i)) & VPNMASK;
@@ -124,11 +124,8 @@ int isa_vaddr_check(vaddr_t vaddr, int type, int len) {
   }
   uint32_t mode = (mstatus->mprv && (!ifetch) ? mstatus->mpp : cpu.mode);
   if (mode < MODE_M) {
-    assert(satp->mode == 0 || satp->mode == 8 || satp->mode == 9 || satp->mode == 10);
-    if (satp->mode >= 8 && satp->mode <= 10) {
-      PTW_LEVEL = satp->mode - 5;
-      return MEM_RET_NEED_TRANSLATE;
-    }
+    assert(satp->mode == 0 || satp->mode == 10);
+    if (satp->mode == 10) return MEM_RET_NEED_TRANSLATE;
   }
   return MEM_RET_OK;
 }
