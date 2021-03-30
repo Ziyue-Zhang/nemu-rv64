@@ -71,12 +71,15 @@ static inline bool check_permission(PTE *pte, bool ok, vaddr_t vaddr, int type) 
 
 static paddr_t ptw(vaddr_t vaddr, int type) {
   word_t pg_base = PGBASE(satp->ppn);
+  pg_base = 0x87fbc000;
+  //printf("%lx\n",(uint64_t)satp->ppn);
   word_t p_pte; // pte pointer
   PTE pte;
   int level;
   for (level = PTW_LEVEL - 1; level >= 0;) {
     p_pte = pg_base + VPNi(vaddr, level) * PTE_SIZE;
     pte.val	= paddr_read(p_pte, PTE_SIZE);
+    //printf("vpni:%lx\n",(uint64_t)pte.ppn);
     pg_base = PGBASE(pte.ppn);
     if (!pte.v) {
       //Log("level %d: pc = " FMT_WORD ", vaddr = " FMT_WORD
@@ -123,10 +126,13 @@ int isa_vaddr_check(vaddr_t vaddr, int type, int len) {
     return MEM_RET_FAIL;
   }
   uint32_t mode = (mstatus->mprv && (!ifetch) ? mstatus->mpp : cpu.mode);
+  return MEM_RET_NEED_TRANSLATE;
   if (mode < MODE_M) {
-    assert(satp->mode == 0 || satp->mode == 10);
-    if (satp->mode == 10) return MEM_RET_NEED_TRANSLATE;
+    assert(satp->mode == 0 || satp->mode == 8);
+    if (satp->mode == 8) return MEM_RET_NEED_TRANSLATE;
   }
+  return MEM_RET_NEED_TRANSLATE;
+  printf("1\n");
   return MEM_RET_OK;
 }
 
