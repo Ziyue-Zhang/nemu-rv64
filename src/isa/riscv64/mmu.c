@@ -29,8 +29,11 @@ typedef union PageTableEntry {
 #define PTW_LEVEL 5
 #define PTE_SIZE 8
 #define VPNMASK 0x1ff
-static inline uintptr_t VPNiSHFT(int i) {
+static inline uintptr_t PPNiSHFT(int i) {
   return i < 4 ? (PGSHFT) + 9 * i : (PGSHFT) + 44;
+}
+static inline uintptr_t VPNiSHFT(int i) {
+  return (PGSHFT) + 9 * i;
 }
 static inline uintptr_t VPNi(vaddr_t va, int i) {
   return (va >> VPNiSHFT(i)) & VPNMASK;
@@ -77,6 +80,7 @@ static paddr_t ptw(vaddr_t vaddr, int type) {
   PTE pte;
   int level;
   for (level = PTW_LEVEL - 1; level >= 0;) {
+    //printf("nemu level:%d\n",level);
     p_pte = pg_base + VPNi(vaddr, level) * PTE_SIZE;
     pte.val	= paddr_read(p_pte, PTE_SIZE);
     //printf("vpni:%lx\n",(uint64_t)pte.ppn);
@@ -98,7 +102,7 @@ static paddr_t ptw(vaddr_t vaddr, int type) {
 
   if (level > 0) {
     // superpage
-    word_t pg_mask = ((1ull << VPNiSHFT(level)) - 1);
+    word_t pg_mask = ((1ull << PPNiSHFT(level)) - 1);
     if ((pg_base & pg_mask) != 0) {
       // missaligned superpage
       if (!check_permission(&pte, false, vaddr, type)) return MEM_RET_FAIL;
